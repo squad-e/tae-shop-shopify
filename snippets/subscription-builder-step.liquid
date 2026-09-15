@@ -1,15 +1,25 @@
-<fieldset class="subscription-step" data-step="{{ step.key.value | escape }}" data-order="{{ step.sort_order.value | default: 0 }}" data-min="{{ step.min_select.value }}" data-max="{{ step.max_select.value }}" data-plan="{{ step.selling_plan_name.value | escape }}">
-  <legend>{{ step.name.value | escape }}</legend>
+{% liquid
+  assign step_identifier = step.key.value | default: step.step_key.value | default: step.system.handle
+  assign step_name = step.name.value | default: step.step_name.value
+  assign step_min = step.min_select.value | default: step.minimum_selection.value
+  assign step_max = step.max_select.value | default: step.maximum_selection.value
+  assign collection = step.collection.value | default: step.product_collection.value
+%}
+<fieldset class="subscription-step" data-step="{{ step_identifier | escape }}" data-order="{{ step.sort_order.value | default: 0 }}" data-min="{{ step_min }}" data-max="{{ step_max }}" data-plan="{{ step.selling_plan_name.value | escape }}">
+  <legend>{{ step_name | escape }}</legend>
   {% if step.description != blank %}{{ step.description | metafield_tag }}{% endif %}
-  <p>เลือก {{ step.min_select.value }}–{{ step.max_select.value }} ชิ้น <span data-step-progress></span></p>
+  <p>เลือก {{ step_min }}–{{ step_max }} ชิ้น <span data-step-progress></span></p>
   <div class="subscription-grid">
-    {% assign collection = step.collection.value %}
-    {% paginate collection.products by 250 %}
-      {% for product in collection.products %}
-        {% render 'subscription-product-card', product: product, step: step %}
-      {% endfor %}
-      {% if paginate.pages > 1 %}<p data-incomplete>จำนวนสินค้าเกินขอบเขตที่รองรับ กรุณาติดต่อร้านค้า</p>{% endif %}
-    {% endpaginate %}
+    {% if collection != blank and collection.id != blank %}
+      {% paginate collection.products by 250 %}
+        {% for product in collection.products %}
+          {% render 'subscription-product-card', product: product, step: step %}
+        {% endfor %}
+        {% if paginate.pages > 1 %}<p data-incomplete>จำนวนสินค้าเกินขอบเขตที่รองรับ กรุณาติดต่อร้านค้า</p>{% endif %}
+      {% endpaginate %}
+    {% else %}
+      <p data-incomplete>ยังไม่พบคอลเลกชันสำหรับขั้นตอนนี้ กรุณาติดต่อร้านค้า</p>
+    {% endif %}
   </div>
   <p data-step-error role="status"></p>
 </fieldset>

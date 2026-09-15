@@ -5,26 +5,25 @@
   <noscript>กรุณาเปิด JavaScript เพื่อเลือกสินค้าในแพ็กเกจ</noscript>
   <div data-content></div>
   <a href="{% if section.settings.list_page != blank %}{{ section.settings.list_page.url }}{% else %}{{ routes.root_url }}pages/subscription{% endif %}">ดูแพ็กเกจทั้งหมด</a>
+  {% comment %}Shopify excludes Draft entries when the definition has publishable enabled.{% endcomment %}
   {% paginate shop.metaobjects.subscription_package.values by 250 %}
     {% for package in shop.metaobjects.subscription_package.values %}
-      {% if package.active.value == true %}
-        <template data-package="{{ package.package_key.value | escape }}">
-          <h1>{{ package.name.value | escape }}</h1>
-          <div class="subscription-layout">
-            <div data-steps>
-              {% for step in package.steps.value %}
-                {% render 'subscription-builder-step', step: step %}
-              {% endfor %}
-            </div>
-            <aside class="subscription-summary">
-              <h2>สรุปแพ็กเกจ</h2>
-              {% if package.display_price.value != blank %}<p>{{ package.display_price.value | times: 100 | money }}</p><small>ราคาที่แสดงเป็นข้อมูลแพ็กเกจ ยอดจริงตามแผนสมาชิกในหน้าชำระเงิน</small>{% endif %}
-              <ul data-summary></ul>
-              <div class="subscription-checkout"><p data-progress role="status" aria-live="polite"></p><button class="button" type="button" data-checkout disabled>เลือกสินค้าให้ครบ</button></div>
-            </aside>
+      <template data-package="{{ package.system.handle | escape }}">
+        <h1>{{ package.name.value | default: package.package_name.value | escape }}</h1>
+        <div class="subscription-layout">
+          <div data-steps>
+            {% for step in package.steps.value %}
+              {% render 'subscription-builder-step', step: step %}
+            {% endfor %}
           </div>
-        </template>
-      {% endif %}
+          <aside class="subscription-summary">
+            <h2>สรุปแพ็กเกจ</h2>
+            {% if package.display_price.value != blank %}<p>{{ package.display_price.value | times: 100 | money }}</p><small>ราคาที่แสดงเป็นข้อมูลแพ็กเกจ ยอดจริงตามแผนสมาชิกในหน้าชำระเงิน</small>{% endif %}
+            <ul data-summary></ul>
+            <div class="subscription-checkout"><p data-progress role="status" aria-live="polite"></p><button class="button" type="button" data-checkout disabled>เลือกสินค้าให้ครบ</button></div>
+          </aside>
+        </div>
+      </template>
     {% endfor %}
     {% if paginate.pages > 1 %}<p>มีแพ็กเกจมากเกินขอบเขตที่รองรับ กรุณาติดต่อร้านค้า</p>{% endif %}
   {% endpaginate %}

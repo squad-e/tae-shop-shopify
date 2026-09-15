@@ -3,11 +3,10 @@
 <div class="section page-width-content subscription-section">
   <h1>{{ section.settings.heading | escape }}</h1>
   <subscription-package-list class="subscription-grid">
+    {% comment %}Shopify excludes Draft entries when the definition has publishable enabled.{% endcomment %}
     {% paginate shop.metaobjects.subscription_package.values by 250 %}
       {% for package in shop.metaobjects.subscription_package.values %}
-        {% if package.active.value == true %}
-          {% render 'subscription-package-card', package: package, builder_page: section.settings.builder_page %}
-        {% endif %}
+        {% render 'subscription-package-card', package: package, builder_page: section.settings.builder_page %}
       {% endfor %}
       {% if paginate.pages > 1 %}{{ paginate | default_pagination }}{% endif %}
     {% endpaginate %}

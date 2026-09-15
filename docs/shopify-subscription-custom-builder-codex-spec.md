@@ -1,5 +1,7 @@
 # Shopify Subscription Custom Builder — Codex Implementation Spec
 
+> Implementation update: use Shopify’s native Active/Draft status (enable the publishable capability) instead of the custom `active` Boolean, and `package.system.handle` instead of the custom `package_key` field. This supersedes those fields and their lookup examples below. The `package` query parameter and `_subscription_package` property now contain the native Handle. See `subscription-builder-setup.md` for current setup instructions.
+
 ## 1. Objective
 
 Implement a **custom subscription package builder inside the existing Shopify custom theme** for JOURNAL.

@@ -1,7 +1,10 @@
 {% liquid
+  assign package_name = package.name.value | default: package.package_name.value
+  assign delivery_interval = package.delivery_interval.value | default: package.delivery_interval_months.value
   assign required = 0
   for step in package.steps.value
-    assign required = required | plus: step.min_select.value
+    assign step_min = step.min_select.value | default: step.minimum_selection.value
+    assign required = required | plus: step_min
   endfor
   assign builder_url = builder_page.url
   if builder_url == blank
@@ -10,15 +13,15 @@
 %}
 <article class="subscription-card" data-order="{{ package.sort_order.value | default: 0 }}">
   {% if package.badge.value != blank %}<p class="subscription-badge">{{ package.badge.value | escape }}</p>{% endif %}
-  {% if package.image.value != blank %}{{ package.image.value | image_url: width: 800 | image_tag: loading: 'lazy', alt: package.name.value }}{% endif %}
-  <h2>{{ package.name.value | escape }}</h2>
+  {% if package.image.value != blank %}{{ package.image.value | image_url: width: 800 | image_tag: loading: 'lazy', alt: package_name }}{% endif %}
+  <h2>{{ package_name | escape }}</h2>
   {% if package.description != blank %}{{ package.description | metafield_tag }}{% endif %}
-  <p>{{ package.duration_months.value }} เดือน{% if package.delivery_interval.value != blank %} · จัดส่งทุก {{ package.delivery_interval.value }} เดือน{% endif %}{% if package.delivery_count.value != blank %} · รวม {{ package.delivery_count.value }} ครั้ง{% endif %}</p>
+  <p>{{ package.duration_months.value }} เดือน{% if delivery_interval != blank %} · จัดส่งทุก {{ delivery_interval }} เดือน{% endif %}{% if package.delivery_count.value != blank %} · รวม {{ package.delivery_count.value }} ครั้ง{% endif %}</p>
   <p>เลือกสินค้าอย่างน้อย {{ required }} ชิ้นต่อรอบ</p>
   {% if package.display_price.value != blank %}
     <p class="subscription-price">{{ package.display_price.value | times: 100 | money }} {% if package.compare_price.value > package.display_price.value %}<s>{{ package.compare_price.value | times: 100 | money }}</s>{% endif %}</p>
     <small>ราคาแพ็กเกจที่แสดง ราคาชำระจริงตามแผนสมาชิกในหน้าชำระเงิน</small>
   {% endif %}
   {% if package.discount_text.value != blank %}<p>{{ package.discount_text.value | escape }}</p>{% endif %}
-  <a class="button" href="{{ builder_url }}?package={{ package.package_key.value | url_encode }}">เลือกแพ็กเกจนี้</a>
+  <a class="button" href="{{ builder_url }}?package={{ package.system.handle | url_encode }}">เลือกแพ็กเกจนี้</a>
 </article>
