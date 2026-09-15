@@ -1,0 +1,15 @@
+<fieldset class="subscription-step" data-step="{{ step.key.value | escape }}" data-order="{{ step.sort_order.value | default: 0 }}" data-min="{{ step.min_select.value }}" data-max="{{ step.max_select.value }}" data-plan="{{ step.selling_plan_name.value | escape }}">
+  <legend>{{ step.name.value | escape }}</legend>
+  {% if step.description != blank %}{{ step.description | metafield_tag }}{% endif %}
+  <p>เลือก {{ step.min_select.value }}–{{ step.max_select.value }} ชิ้น <span data-step-progress></span></p>
+  <div class="subscription-grid">
+    {% assign collection = step.collection.value %}
+    {% paginate collection.products by 250 %}
+      {% for product in collection.products %}
+        {% render 'subscription-product-card', product: product, step: step %}
+      {% endfor %}
+      {% if paginate.pages > 1 %}<p data-incomplete>จำนวนสินค้าเกินขอบเขตที่รองรับ กรุณาติดต่อร้านค้า</p>{% endif %}
+    {% endpaginate %}
+  </div>
+  <p data-step-error role="status"></p>
+</fieldset>

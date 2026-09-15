@@ -1,0 +1,18 @@
+{{ 'subscription-builder.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'subscription-builder.js' | asset_url }}" type="module"></script>
+<div class="section page-width-content subscription-section">
+  <h1>{{ section.settings.heading | escape }}</h1>
+  <subscription-package-list class="subscription-grid">
+    {% paginate shop.metaobjects.subscription_package.values by 250 %}
+      {% for package in shop.metaobjects.subscription_package.values %}
+        {% if package.active.value == true %}
+          {% render 'subscription-package-card', package: package, builder_page: section.settings.builder_page %}
+        {% endif %}
+      {% endfor %}
+      {% if paginate.pages > 1 %}{{ paginate | default_pagination }}{% endif %}
+    {% endpaginate %}
+  </subscription-package-list>
+</div>
+{% schema %}
+{"name":"Subscription packages","settings":[{"type":"text","id":"heading","label":"Heading","default":"เลือกแพ็กเกจ JOURNAL"},{"type":"page","id":"builder_page","label":"Builder page"}],"presets":[{"name":"Subscription packages"}]}
+{% endschema %}

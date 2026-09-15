@@ -1,0 +1,30 @@
+subscription-builder, subscription-package-list { display: block; }
+.subscription-section { padding-block: 40px 64px; }
+.subscription-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 24px; }
+.subscription-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); gap: 32px; align-items: start; }
+.subscription-card, .subscription-summary { border: 1px solid rgb(var(--color-foreground-rgb) / 0.2); padding: 20px; border-radius: var(--style-border-radius-cards, 8px); }
+.subscription-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.subscription-card img { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.subscription-card h2, .subscription-card h3, .subscription-card p { margin: 0; }
+.subscription-card .button { margin-top: auto; }
+.subscription-price { font-size: 1.4em; }
+.subscription-price s { font-size: .75em; }
+.subscription-badge { font-weight: bold; }
+.subscription-step { border: 0; padding: 0; margin: 0 0 40px; min-width: 0; }
+.subscription-step legend { font-size: 1.5em; font-family: var(--font-heading--family); }
+.subscription-option { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid transparent; cursor: pointer; }
+.subscription-option:has(:checked) { border-color: currentColor; font-weight: bold; }
+.subscription-option:has(:disabled) { opacity: .55; cursor: not-allowed; }
+.subscription-option input { appearance: auto; width: 20px; height: 20px; flex-shrink: 0; }
+.subscription-option:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
+.subscription-summary { position: sticky; top: 24px; }
+.subscription-summary ul { padding-inline-start: 20px; }
+.subscription-checkout .button { width: 100%; }
+.subscription-checkout button:disabled { opacity: .5; cursor: not-allowed; }
+[data-error]:empty, [data-step-error]:empty { display: none; }
+@media (max-width: 749px) {
+  .subscription-layout { grid-template-columns: 1fr; }
+  .subscription-summary { position: static; }
+  .subscription-checkout { position: sticky; bottom: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); background: var(--color-background); z-index: 2; }
+  .subscription-summary { display: contents; }
+}
