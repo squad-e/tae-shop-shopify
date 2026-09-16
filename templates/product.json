@@ -6,7 +6,8 @@
  * or related systems. Please exercise caution as any changes
  * made to this file may be overwritten.
  * ------------------------------------------------------------
- */{
+ */
+{
   "sections": {
     "main": {
       "type": "product-information",
@@ -30,6 +31,13 @@
           },
           "blocks": {}
         },
+        "yuko_order_limits_order_limit_product_message_JHM9VH": {
+          "type": "shopify://apps/yuko-order-limits/blocks/order-limit-product-message/52f9f134-3e39-4eea-b253-74233a4918d4",
+          "disabled": true,
+          "settings": {
+            "custom_javascript": ""
+          }
+        },
         "media-gallery": {
           "type": "_product-media-gallery",
           "static": true,
@@ -38,6 +46,7 @@
             "media_columns": "two",
             "image_gap": 4,
             "large_first_image": false,
+            "icons_style": "arrow",
             "slideshow_controls_style": "counter",
             "slideshow_mobile_controls_style": "dots",
             "thumbnail_position": "right",
@@ -116,6 +125,7 @@
                 "border_opacity": 100,
                 "border_color": "",
                 "border_radius": 0,
+                "link": "",
                 "open_in_new_tab": false,
                 "placeholder": "",
                 "padding-block-start": 0,
@@ -310,7 +320,8 @@
         }
       },
       "block_order": [
-        "disclosures_g9mWze"
+        "disclosures_g9mWze",
+        "yuko_order_limits_order_limit_product_message_JHM9VH"
       ],
       "settings": {
         "content_width": "content-center-aligned",
