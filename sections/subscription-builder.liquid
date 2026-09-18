@@ -1,10 +1,14 @@
 {{ 'subscription-builder.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'subscription-builder.js' | asset_url }}" type="module"></script>
 <subscription-builder class="section page-width-content subscription-section" data-root="{{ routes.root_url }}">
+  {% assign list_url = section.settings.list_page.url %}
+  {% if list_url == blank %}{% assign list_url = routes.root_url | append: 'pages/subscription' %}{% endif %}
+  <nav aria-label="Breadcrumb"><a href="{{ routes.root_url }}">หน้าแรก</a> / <a href="{{ list_url }}">Subscription</a> / เลือกสินค้า</nav>
+  <a class="button-secondary" href="{{ list_url }}">เปลี่ยนแพ็กเกจ</a>
   <p data-error role="alert" tabindex="-1"></p>
   <noscript>กรุณาเปิด JavaScript เพื่อเลือกสินค้าในแพ็กเกจ</noscript>
   <div data-content></div>
-  <a href="{% if section.settings.list_page != blank %}{{ section.settings.list_page.url }}{% else %}{{ routes.root_url }}pages/subscription{% endif %}">ดูแพ็กเกจทั้งหมด</a>
+
   {% comment %}Shopify excludes Draft entries when the definition has publishable enabled.{% endcomment %}
   {% paginate shop.metaobjects.subscription_package.values by 250 %}
     {% for package in shop.metaobjects.subscription_package.values %}
@@ -18,9 +22,23 @@
           </div>
           <aside class="subscription-summary">
             <h2>สรุปแพ็กเกจ</h2>
-            {% if package.display_price.value != blank %}<p>{{ package.display_price.value | times: 100 | money }}</p><small>ราคาที่แสดงเป็นข้อมูลแพ็กเกจ ยอดจริงตามแผนสมาชิกในหน้าชำระเงิน</small>{% endif %}
+            <p>{{ package.name.value | default: package.package_name.value | escape }}</p>
+            {% assign delivery_interval = package.delivery_interval.value | default: package.delivery_interval_months.value %}
+            {% if delivery_interval != blank %}<p>จัดส่งทุก {{ delivery_interval }} เดือน{% if package.delivery_count.value != blank %} · รวม {{ package.delivery_count.value }} ครั้ง{% endif %}</p>{% endif %}
+            <progress data-progress-bar max="1" value="0" aria-label="ความคืบหน้าการเลือกสินค้า"></progress>
+            <p data-progress role="status" aria-live="polite"></p>
+            <button class="button-secondary" type="button" data-clear disabled>ล้างทั้งหมด</button>
+            <h3>แพ็กเกจของคุณ</h3>
+            <p data-summary-empty>ยังไม่ได้เลือกสินค้า</p>
             <ul data-summary></ul>
-            <div class="subscription-checkout"><p data-progress role="status" aria-live="polite"></p><button class="button" type="button" data-checkout disabled>เลือกสินค้าให้ครบ</button></div>
+            {% if package.display_price.value != blank %}
+              <p>ราคาแพ็กเกจ {{ package.display_price.value | times: 100 | money }}
+                {% if package.compare_price.value > package.display_price.value %}<s>{{ package.compare_price.value | times: 100 | money }}</s>{% endif %}
+              </p>
+              <small>ราคาที่แสดงเป็นข้อมูลแพ็กเกจ ยอดจริงตามแผนสมาชิกในหน้าชำระเงิน</small>
+            {% endif %}
+            {% if package.discount_text.value != blank %}<p>{{ package.discount_text.value | escape }}</p>{% endif %}
+            <div class="subscription-checkout"><button class="button" type="button" data-checkout disabled>เลือกสินค้าให้ครบ</button></div>
           </aside>
         </div>
       </template>

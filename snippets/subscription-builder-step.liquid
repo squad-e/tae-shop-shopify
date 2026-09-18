@@ -9,6 +9,10 @@
   <legend>{{ step_name | escape }}</legend>
   {% if step.description != blank %}{{ step.description | metafield_tag }}{% endif %}
   <p>เลือก {{ step_min }}–{{ step_max }} ชิ้น <span data-step-progress></span></p>
+  <label class="subscription-search">ค้นหากลิ่นในขั้นตอนนี้
+    <input type="search" data-search placeholder="ค้นหากลิ่นที่ชอบ" autocomplete="off">
+  </label>
+  <p data-search-empty role="status" hidden>ไม่พบสินค้าที่ตรงกับคำค้น</p>
   <div class="subscription-grid">
     {% if collection != blank and collection.id != blank %}
       {% paginate collection.products by 250 %}

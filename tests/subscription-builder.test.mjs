@@ -12,9 +12,9 @@ const context = vm.createContext({
   URLSearchParams, console, Math, Date,
   window: { location: { assign() {} } },
 });
-vm.runInContext(`${source}\nglobalThis.api = { validSteps, buildItems, SubscriptionBuilder };`, context);
-const { validSteps, buildItems, SubscriptionBuilder } = context.api;
-const option = (id, plan, checked = true) => ({ variant: String(id), sellingPlan: String(plan), checked, ineligible: false });
+vm.runInContext(`${source}\nglobalThis.api = { validSteps, buildItems, SubscriptionBuilder, canAdjust };`, context);
+const { validSteps, buildItems, SubscriptionBuilder, canAdjust } = context.api;
+const option = (id, plan, checked = true) => ({ variant: String(id), sellingPlan: String(plan), quantity: checked ? 1 : 0, ineligible: false });
 const step = (key, options, min = 1, max = 1) => ({ key, plan: 'Configured plan', min, max, options });
 
 test('one-step and future mixed-plan packages generate complete grouped payloads', () => {
@@ -102,4 +102,28 @@ test('network and cart failures restore state without redirecting', async () => 
 test('incomplete submissions never contact cart', async () => {
   context.fetch = () => { assert.fail('Should not submit'); };
   await builder([step('a', [])]).submit();
+});
+
+
+test('repeated units count toward limits and retain per-step plans in one payload', () => {
+  const diffuser = { ...option(1, 10), quantity: 2 };
+  const steps = [step('diffuser', [diffuser, option(3, 10, false)], 2, 2), step('perfume', [option(2, 20)], 1, 1)];
+  assert.equal(validSteps(steps), true);
+  const items = buildItems(steps, 'package', 'group');
+  assert.equal(items.length, 2);
+  assert.equal(items[0].quantity, 2);
+  assert.equal(items[1].selling_plan, '20');
+  assert.equal(canAdjust(steps[0], steps[0].options[1], 1), false);
+  assert.equal(canAdjust(steps[0], diffuser, -1), true);
+  diffuser.quantity = 1;
+  assert.equal(validSteps(steps), false);
+  assert.equal(canAdjust(steps[0], steps[0].options[1], 1), true);
+});
+
+test('negative, fractional, non-finite and over-limit quantities cannot submit', () => {
+  for (const quantity of [-1, 0.5, NaN, Infinity, 3]) {
+    assert.equal(validSteps([step('a', [{ ...option(1, 10), quantity }], 1, 2)]), false);
+  }
+  const empty = option(1, 10, false);
+  assert.equal(canAdjust(step('a', [empty]), empty, -1), false);
 });

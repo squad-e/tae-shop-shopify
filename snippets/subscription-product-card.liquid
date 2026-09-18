@@ -1,20 +1,29 @@
-<article class="subscription-card" data-product>
+<article class="subscription-card" data-product data-search-text="{{ product.title | escape }} {{ product.variants | map: 'title' | join: ' ' | escape }}">
   {% if product.featured_image != blank %}{{ product.featured_image | image_url: width: 600 | image_tag: loading: 'lazy', alt: product.title }}{% endif %}
   <h3>{{ product.title | escape }}</h3>
   {% for variant in product.variants %}
     {% liquid
       assign matching_plan = blank
       assign matches = 0
+      assign plan_price = blank
       for allocation in variant.selling_plan_allocations
         if allocation.selling_plan.name == step.selling_plan_name.value
           assign matching_plan = allocation.selling_plan.id
+          assign plan_price = allocation.price
           assign matches = matches | plus: 1
         endif
       endfor
     %}
-    <label class="subscription-option">
-      <input type="checkbox" data-variant="{{ variant.id }}" data-product-id="{{ product.id }}" data-title="{{ product.title | escape }}{% unless product.has_only_default_variant %} — {{ variant.title | escape }}{% endunless %}" data-selling-plan="{{ matching_plan }}" {% unless variant.available and matches == 1 %}disabled data-ineligible{% endunless %}>
-      <span>{% if product.has_only_default_variant %}เลือก {{ product.title | escape }}{% else %}{{ variant.title | escape }}{% endif %}{% unless variant.available %} — สินค้าหมด{% else %}{% unless matches == 1 %} — ไม่สามารถใช้สินค้านี้กับแพ็กเกจที่เลือกได้{% endunless %}{% endunless %}</span>
-    </label>
+    {% assign variant_image = variant.featured_image | default: product.featured_image %}
+    <div class="subscription-variant" data-variant="{{ variant.id }}" data-quantity="0" data-title="{{ product.title | escape }}{% unless product.has_only_default_variant %} — {{ variant.title | escape }}{% endunless %}" data-image="{% if variant_image != blank %}{{ variant_image | image_url: width: 160 }}{% endif %}" data-price="{% if plan_price != blank %}{{ plan_price | money | escape }}{% endif %}" data-selling-plan="{{ matching_plan }}" {% unless variant.available and matches == 1 %}data-ineligible{% endunless %}>
+      {% unless product.has_only_default_variant %}<p>{{ variant.title | escape }}</p>{% endunless %}
+      {% unless variant.available %}<p>สินค้าหมด</p>{% else %}{% unless matches == 1 %}<p>ไม่สามารถใช้สินค้านี้กับแพ็กเกจที่เลือกได้</p>{% endunless %}{% endunless %}
+      <span data-selected-badge hidden></span>
+      <div class="subscription-quantity" role="group" aria-label="จำนวน {{ product.title | escape }} {{ variant.title | escape }}">
+        <button type="button" class="button-secondary" data-adjust="-1" aria-label="ลดจำนวน {{ product.title | escape }} {{ variant.title | escape }}" disabled>−</button>
+        <output data-quantity-label aria-live="polite">0</output>
+        <button type="button" class="button-secondary" data-adjust="1" aria-label="เพิ่มจำนวน {{ product.title | escape }} {{ variant.title | escape }}" disabled>+</button>
+      </div>
+    </div>
   {% endfor %}
 </article>

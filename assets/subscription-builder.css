@@ -28,3 +28,21 @@ subscription-builder, subscription-package-list { display: block; }
   .subscription-checkout { position: sticky; bottom: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); background: var(--color-background); z-index: 2; }
   .subscription-summary { display: contents; }
 }
+
+/* Layout only for the subscription controls; colors and typography inherit the theme. */
+.subscription-banner { margin-block-end: 32px; }
+.subscription-banner img { width: 100%; height: auto; }
+.subscription-how-it-works { margin-block-start: 40px; }
+.subscription-search { display: grid; gap: 8px; margin-block: 16px; }
+.subscription-search input { width: 100%; min-width: 0; }
+.subscription-quantity { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.subscription-quantity button { min-width: 40px; min-height: 40px; padding: 8px 12px; }
+.subscription-quantity button:disabled { opacity: .5; cursor: not-allowed; }
+.subscription-variant { display: grid; gap: 8px; }
+.subscription-card[data-selected] { outline: 2px solid currentColor; outline-offset: -2px; }
+.subscription-card[hidden], [data-selected-badge][hidden], [data-search-empty][hidden], [data-summary-empty][hidden] { display: none; }
+.subscription-summary progress { width: 100%; }
+.subscription-summary [data-summary] { list-style: none; padding: 0; }
+[data-summary-row] { display: grid; gap: 8px; margin-block: 20px; }
+[data-summary-row] img { object-fit: cover; }
+[data-summary-row] p { margin: 0; overflow-wrap: anywhere; }

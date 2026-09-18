@@ -5,7 +5,7 @@
 - `page.subscription` template: active package cards, sorted numerically by CMS sort order.
 - `page.subscription-builder` template: resolves the `package` URL parameter against the active package's native `system.handle`, sorts its steps, and renders collection variants.
 - Native custom elements and existing theme buttons, colors, fonts and request helper.
-- A checkbox per variant supports selecting multiple distinct variants when a step permits it. Each selection adds quantity 1. Single-selection steps allow switching directly between variants.
+- Minus/plus controls per variant support repeated units, bounded by each step’s total minimum/maximum. Remove a selected unit before choosing a different product when the step is full.
 - Selling plans resolve in Liquid from each variant's allocations using an exact name match. Unavailable variants and missing or ambiguous plan matches are disabled. Escaped data attributes carry the resolved allocation into JavaScript; no Appstle browser API or embedded raw JSON is needed.
 - One localized cart add request for the whole package, shared group metadata, submission lock, error recovery and checkout redirect after success.
 - Cart grouping is optional in the spec and is not included. Existing cart controls remain in place.
@@ -65,3 +65,13 @@ The original spec keys remain preferred. The following label-derived alternative
 | Step `max_select` | `maximum_selection` |
 
 Minimum and maximum values are never invented when both keys are missing. The builder remains disabled for incomplete configuration. Entry labels do not reveal actual field keys; inspect Manage definition if fields still appear blank.
+
+## Subscription UI controls
+
+The Subscription packages section now has an optional banner image, banner heading/description, and editable three-step instructions in the Theme Editor. Select a banner image there after uploading the theme; no generated image is automatically presented as a real product. Package images, benefits/description, badges, compare prices and prices continue to come from metaobjects.
+
+Builder cards use minus/plus controls per variant. `min_select` and `max_select` (or their aliases) now count **total units per step**, including multiple units of the same variant. Example: diffuser step min/max 2 and perfume step min/max 1 produces a package of three units; selecting a diffuser twice creates one cart line with quantity 2. This supersedes the earlier checkbox / quantity-1 behavior. Different steps still resolve their own plans.
+
+Search filters product/variant names within its step and does not clear selections. The summary shows images, allocated plan unit prices, quantity controls, remove actions, and Clear all. Progress credits each step only up to its required minimum. The package price and compare price remain display-only; no monthly billing claims or new discount calculations are introduced.
+
+Only functional layout styles were added. The Figma color, typography, background treatment and additional mobile redesign are deferred. Store-wide header/footer remain unchanged. Verify real inventory and subscription totals in Shopify before publishing.

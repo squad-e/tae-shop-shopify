@@ -1,7 +1,15 @@
 {{ 'subscription-builder.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'subscription-builder.js' | asset_url }}" type="module"></script>
 <div class="section page-width-content subscription-section">
-  <h1>{{ section.settings.heading | escape }}</h1>
+  <div class="subscription-banner">
+    {% if section.settings.banner_image != blank %}
+      {{ section.settings.banner_image | image_url: width: 1600 | image_tag: loading: 'eager', alt: section.settings.banner_heading }}
+    {% endif %}
+    <h2>{{ section.settings.banner_heading | escape }}</h2>
+    {{ section.settings.banner_text }}
+    <a class="button" href="#SubscriptionPackages-{{ section.id }}">เลือกแพ็กเกจ</a>
+  </div>
+  <h1 id="SubscriptionPackages-{{ section.id }}">{{ section.settings.heading | escape }}</h1>
   <subscription-package-list class="subscription-grid">
     {% comment %}Shopify excludes Draft entries when the definition has publishable enabled.{% endcomment %}
     {% paginate shop.metaobjects.subscription_package.values by 250 %}
@@ -11,7 +19,94 @@
       {% if paginate.pages > 1 %}{{ paginate | default_pagination }}{% endif %}
     {% endpaginate %}
   </subscription-package-list>
+  <section class="subscription-how-it-works" aria-label="ขั้นตอนสมัครสมาชิก">
+    <h2>{{ section.settings.how_heading | escape }}</h2>
+    <ol class="subscription-grid">
+      <li><h3>{{ section.settings.step_1_heading | escape }}</h3><p>{{ section.settings.step_1_text | escape }}</p></li>
+      <li><h3>{{ section.settings.step_2_heading | escape }}</h3><p>{{ section.settings.step_2_text | escape }}</p></li>
+      <li><h3>{{ section.settings.step_3_heading | escape }}</h3><p>{{ section.settings.step_3_text | escape }}</p></li>
+    </ol>
+  </section>
 </div>
 {% schema %}
-{"name":"Subscription packages","settings":[{"type":"text","id":"heading","label":"Heading","default":"เลือกแพ็กเกจ JOURNAL"},{"type":"page","id":"builder_page","label":"Builder page"}],"presets":[{"name":"Subscription packages"}]}
+{
+  "name": "Subscription packages",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "เลือกแพ็กเกจ JOURNAL"
+    },
+    {
+      "type": "page",
+      "id": "builder_page",
+      "label": "Builder page"
+    },
+    {
+      "type": "image_picker",
+      "id": "banner_image",
+      "label": "Subscription banner"
+    },
+    {
+      "type": "text",
+      "id": "banner_heading",
+      "label": "Banner heading",
+      "default": "ค้นพบกลิ่นที่ใช่กับ JOURNAL"
+    },
+    {
+      "type": "richtext",
+      "id": "banner_text",
+      "label": "Banner description",
+      "default": "<p>เลือกแพ็กเกจและกลิ่นที่ชอบ พร้อมรับสินค้าตามรอบจัดส่งของแพ็กเกจ</p>"
+    },
+    {
+      "type": "text",
+      "id": "how_heading",
+      "label": "How it works heading",
+      "default": "สมัครง่ายเพียง 3 ขั้นตอน"
+    },
+    {
+      "type": "text",
+      "id": "step_1_heading",
+      "label": "Step 1 heading",
+      "default": "เลือกแพ็กเกจ"
+    },
+    {
+      "type": "text",
+      "id": "step_1_text",
+      "label": "Step 1 description",
+      "default": "เลือกแพ็กเกจที่เหมาะกับคุณ"
+    },
+    {
+      "type": "text",
+      "id": "step_2_heading",
+      "label": "Step 2 heading",
+      "default": "เลือกกลิ่น"
+    },
+    {
+      "type": "text",
+      "id": "step_2_text",
+      "label": "Step 2 description",
+      "default": "เลือกสินค้าให้ครบตามจำนวนในแต่ละขั้น"
+    },
+    {
+      "type": "text",
+      "id": "step_3_heading",
+      "label": "Step 3 heading",
+      "default": "รับสินค้าตามรอบ"
+    },
+    {
+      "type": "text",
+      "id": "step_3_text",
+      "label": "Step 3 description",
+      "default": "ชำระเงินและรับสินค้าตามรอบจัดส่งของแพ็กเกจ"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Subscription packages"
+    }
+  ]
+}
 {% endschema %}

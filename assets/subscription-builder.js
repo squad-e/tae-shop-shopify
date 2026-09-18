@@ -12,23 +12,34 @@ function sortChildren(container, selector) {
     .forEach((child) => container.append(child));
 }
 
-/** All rules and plan IDs originate in Liquid, including variant eligibility. */
+export function selectionCount(step) {
+  return step.options.reduce((sum, option) => sum + option.quantity, 0);
+}
+
+export function canAdjust(step, option, delta) {
+  const next = option.quantity + delta;
+  return !option.ineligible && Number.isSafeInteger(next) && next >= 0
+    && Number.isSafeInteger(step.max) && selectionCount(step) + delta <= step.max;
+}
+
+/** Limits apply to total units in a step, including repeated units of a variant. */
 export function validSteps(steps) {
   return steps.length > 0 && new Set(steps.map((step) => step.key)).size === steps.length && steps.every((step) => {
-    const selected = step.options.filter((option) => option.checked);
-    return Boolean(step.key && step.plan) && Number.isInteger(step.min) && Number.isInteger(step.max)
+    const selected = step.options.filter((option) => option.quantity > 0);
+    const count = selectionCount(step);
+    return Boolean(step.key && step.plan) && Number.isSafeInteger(step.min) && Number.isSafeInteger(step.max)
       && step.min >= 0 && step.max >= step.min && !step.incomplete
-      && step.options.filter((option) => !option.ineligible).length >= step.min
-      && selected.length >= step.min && selected.length <= step.max
+      && step.options.every((option) => Number.isSafeInteger(option.quantity) && option.quantity >= 0)
+      && count >= step.min && count <= step.max
       && selected.every((option) => !option.ineligible && /^\d+$/.test(option.variant) && /^\d+$/.test(option.sellingPlan));
   });
 }
 
 export function buildItems(steps, packageKey, group) {
   if (!validSteps(steps)) throw new Error('Invalid subscription selection');
-  const items = steps.flatMap((step) => step.options.filter((option) => option.checked).map((option) => ({
+  const items = steps.flatMap((step) => step.options.filter((option) => option.quantity > 0).map((option) => ({
     id: option.variant,
-    quantity: 1,
+    quantity: option.quantity,
     selling_plan: option.sellingPlan,
     properties: {
       _subscription_package: packageKey,
@@ -61,7 +72,8 @@ export class SubscriptionBuilder extends HTMLElement {
     this.querySelector('[data-content]').append(templates[0].content.cloneNode(true));
     sortChildren(this.querySelector('[data-steps]'), '[data-step]');
     this.button = this.querySelector('[data-checkout]');
-    this.addEventListener('change', (event) => this.change(event));
+    this.addEventListener('click', (event) => this.adjust(event));
+    this.addEventListener('input', (event) => this.search(event));
     this.button.addEventListener('click', () => this.submit());
     this.update();
   }
@@ -75,20 +87,40 @@ export class SubscriptionBuilder extends HTMLElement {
       max: element.dataset.max === '' ? NaN : Number(element.dataset.max),
       incomplete: Boolean(element.querySelector('[data-incomplete]')),
       options: [...element.querySelectorAll('[data-variant]')].map((input) => ({
-        input, checked: input.checked, ineligible: input.hasAttribute('data-ineligible'),
+        input, quantity: Number(input.dataset.quantity), ineligible: input.hasAttribute('data-ineligible'),
         variant: input.dataset.variant, sellingPlan: input.dataset.sellingPlan, title: input.dataset.title,
+        image: input.dataset.image, price: input.dataset.price,
       })),
     }));
   }
 
-  change(event) {
-    const input = event.target;
-    if (!input.matches('[data-variant]')) return;
-    const step = this.readSteps().find((item) => item.element.contains(input));
-    if (this.busy || input.hasAttribute('data-ineligible')) input.checked = false;
-    if (input.checked && step.options.filter((item) => item.checked).length > step.max) {
-      if (step.max === 1) step.options.forEach((item) => { if (item.input !== input) item.input.checked = false; });
-      else input.checked = false;
+  search(event) {
+    if (!event.target.matches('[data-search]')) return;
+    const step = event.target.closest('[data-step]');
+    const query = event.target.value.normalize('NFKC').toLocaleLowerCase().trim();
+    const cards = [...step.querySelectorAll('[data-product]')];
+    for (const card of cards) {
+      card.hidden = !card.dataset.searchText.normalize('NFKC').toLocaleLowerCase().includes(query);
+    }
+    step.querySelector('[data-search-empty]').hidden = !cards.length || cards.some((card) => !card.hidden);
+  }
+
+  adjust(event) {
+    const button = event.target.closest('button');
+    if (this.busy || !button || !this.contains(button) || button.disabled) return;
+    const steps = this.readSteps();
+    if (button.hasAttribute('data-clear')) {
+      for (const step of steps) for (const option of step.options) option.input.dataset.quantity = '0';
+    } else {
+      if (!button.hasAttribute('data-adjust') && !button.hasAttribute('data-remove')) return;
+      const row = button.closest('[data-summary-row]');
+      const source = button.closest('[data-variant]');
+      const step = steps.find((step) => row ? step.key === row.dataset.stepKey : step.element.contains(source));
+      const option = step?.options.find((option) => row ? option.variant === row.dataset.variantId : option.input === source);
+      if (!option) return;
+      const delta = button.hasAttribute('data-remove') ? -option.quantity : Number(button.dataset.adjust);
+      if (!canAdjust(step, option, delta)) return;
+      option.input.dataset.quantity = String(option.quantity + delta);
     }
     this.error.textContent = '';
     this.update();
@@ -96,37 +128,104 @@ export class SubscriptionBuilder extends HTMLElement {
 
   update() {
     const steps = this.readSteps();
-    const selected = steps.flatMap((step) => step.options.filter((option) => option.checked));
+    const count = steps.reduce((sum, step) => sum + selectionCount(step), 0);
     const required = steps.reduce((sum, step) => sum + (Number.isFinite(step.min) ? step.min : 0), 0);
-    const valid = validSteps(steps) && selected.length > 0;
+    const valid = validSteps(steps) && count > 0;
     this.button.disabled = this.busy || !valid;
     this.button.textContent = this.busy ? 'กำลังเพิ่มสินค้า…' : valid ? 'ไปชำระเงิน' : `เลือกสินค้าให้ครบตามขั้นตอน (ขั้นต่ำ ${required} ชิ้น)`;
-    this.querySelector('[data-progress]').textContent = `เลือกแล้ว ${selected.length} / ${required} ชิ้นขั้นต่ำ`;
+    this.querySelector('[data-progress]').textContent = `เลือกแล้ว ${count} / ${required} ชิ้นขั้นต่ำ`;
+    const progress = this.querySelector('[data-progress-bar]');
+    progress.max = Math.max(required, 1);
+    progress.value = steps.reduce((sum, step) => sum + Math.min(selectionCount(step), Number.isFinite(step.min) ? step.min : 0), 0);
+    this.querySelector('[data-clear]').disabled = this.busy || count === 0;
+    this.querySelector('[data-summary-empty]').hidden = count > 0;
     const summary = this.querySelector('[data-summary]');
+    // Preserve keyboard focus when quantity controls in the summary are rebuilt.
+    const focused = document.activeElement;
+    const focusedRow = focused?.closest('[data-summary-row]');
+    const focusIndex = focusedRow && summary.contains(focusedRow) ? [...summary.children].indexOf(focusedRow) : -1;
+    const focusAction = focused?.hasAttribute('data-remove') ? '[data-remove]' : `[data-adjust="${focused?.dataset.adjust}"]`;
+    const focusKey = focusedRow ? [focusedRow.dataset.stepKey, focusedRow.dataset.variantId] : null;
     summary.replaceChildren();
     for (const step of steps) {
-      const count = step.options.filter((option) => option.checked).length;
+      const count = selectionCount(step);
       step.element.querySelector('[data-step-progress]').textContent = `(เลือกแล้ว ${count})`;
-      const unavailable = step.incomplete || !step.options.some((option) => !option.ineligible)
-        || step.options.filter((option) => !option.ineligible).length < step.min;
+      const unavailable = step.incomplete || (step.min > 0 && !step.options.some((option) => !option.ineligible));
       step.element.querySelector('[data-step-error]').textContent = unavailable ? messages.configuration : '';
       for (const option of step.options) {
-        // For single-choice steps retain the ability to switch directly to another variant.
-        option.input.disabled = this.busy || option.ineligible || (!option.checked && count >= step.max && step.max !== 1);
-        if (option.checked) {
-          const item = document.createElement('li');
-          item.textContent = `${step.element.querySelector('legend').textContent}: ${option.title}`;
-          summary.append(item);
+        const selected = option.quantity > 0;
+        option.input.querySelector('[data-quantity-label]').textContent = option.quantity;
+        const badge = option.input.querySelector('[data-selected-badge]');
+        badge.hidden = !selected;
+        badge.textContent = `×${option.quantity}`;
+        for (const control of option.input.querySelectorAll('[data-adjust]')) {
+          control.disabled = this.busy || !canAdjust(step, option, Number(control.dataset.adjust));
         }
+        if (selected) this.addSummaryRow(summary, step, option);
+      }
+      for (const card of step.element.querySelectorAll('[data-product]')) {
+        card.toggleAttribute('data-selected', [...card.querySelectorAll('[data-variant]')].some((input) => Number(input.dataset.quantity) > 0));
       }
     }
+    if (focusIndex >= 0) {
+      const row = [...summary.children].find((row) => row.dataset.stepKey === focusKey[0] && row.dataset.variantId === focusKey[1]);
+      const candidate = row?.querySelector(focusAction);
+      const fallbackRow = summary.children[Math.min(focusIndex, summary.children.length - 1)];
+      const target = candidate && !candidate.disabled ? candidate : fallbackRow?.querySelector('button:not(:disabled)');
+      (target || this.querySelector('[data-search]'))?.focus();
+    }
     if (!steps.length) this.error.textContent = messages.configuration;
+  }
+
+  addSummaryRow(summary, step, option) {
+    const item = document.createElement('li');
+    item.dataset.summaryRow = '';
+    item.dataset.stepKey = step.key;
+    item.dataset.variantId = option.variant;
+    if (option.image) {
+      const image = document.createElement('img');
+      image.src = option.image;
+      image.alt = option.title;
+      image.width = 64;
+      image.height = 64;
+      item.append(image);
+    }
+    const description = document.createElement('p');
+    description.textContent = `${step.element.querySelector('legend').textContent}: ${option.title}${option.price ? ` · ${option.price} / ชิ้น` : ''}`;
+    item.append(description);
+    const controls = document.createElement('div');
+    controls.className = 'subscription-quantity';
+    for (const delta of [-1, 1]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'button-secondary';
+      button.dataset.adjust = String(delta);
+      button.textContent = delta < 0 ? '−' : '+';
+      button.setAttribute('aria-label', `${delta < 0 ? 'ลด' : 'เพิ่ม'}จำนวน ${option.title}`);
+      button.disabled = this.busy || !canAdjust(step, option, delta);
+      if (delta === 1) {
+        const quantity = document.createElement('span');
+        quantity.textContent = option.quantity;
+        controls.append(quantity);
+      }
+      controls.append(button);
+    }
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'button-secondary';
+    remove.dataset.remove = '';
+    remove.textContent = 'ลบ';
+    remove.setAttribute('aria-label', `ลบ ${option.title}`);
+    remove.disabled = this.busy;
+    controls.append(remove);
+    item.append(controls);
+    summary.append(item);
   }
 
   async submit() {
     if (this.busy) return;
     const steps = this.readSteps();
-    if (!validSteps(steps) || !steps.some((step) => step.options.some((option) => option.checked))) {
+    if (!validSteps(steps) || !steps.some((step) => step.options.some((option) => option.quantity > 0))) {
       this.update();
       return;
     }
