@@ -132,7 +132,8 @@ export class SubscriptionBuilder extends HTMLElement {
     const required = steps.reduce((sum, step) => sum + (Number.isFinite(step.min) ? step.min : 0), 0);
     const valid = validSteps(steps) && count > 0;
     this.button.disabled = this.busy || !valid;
-    this.button.textContent = this.busy ? 'กำลังเพิ่มสินค้า…' : valid ? 'ไปชำระเงิน' : `เลือกสินค้าให้ครบตามขั้นตอน (ขั้นต่ำ ${required} ชิ้น)`;
+    this.button.textContent = this.busy ? 'กำลังเพิ่มสินค้า…' : 'ชำระเงิน';
+    this.button.setAttribute('aria-label', valid ? 'ชำระเงิน' : `เลือกสินค้าให้ครบทุกขั้นตอน ขั้นต่ำ ${required} ชิ้น`);
     this.querySelector('[data-progress]').textContent = `เลือกแล้ว ${count} / ${required} ชิ้นขั้นต่ำ`;
     const progress = this.querySelector('[data-progress-bar]');
     progress.max = Math.max(required, 1);
@@ -164,6 +165,7 @@ export class SubscriptionBuilder extends HTMLElement {
         if (selected) this.addSummaryRow(summary, step, option);
       }
       for (const card of step.element.querySelectorAll('[data-product]')) {
+        card.toggleAttribute('data-at-limit', count >= step.max);
         card.toggleAttribute('data-selected', [...card.querySelectorAll('[data-variant]')].some((input) => Number(input.dataset.quantity) > 0));
       }
     }
@@ -191,7 +193,15 @@ export class SubscriptionBuilder extends HTMLElement {
       item.append(image);
     }
     const description = document.createElement('p');
-    description.textContent = `${step.element.querySelector('legend').textContent}: ${option.title}${option.price ? ` · ${option.price} / ชิ้น` : ''}`;
+    description.className = 'subscription-summary-description';
+    const title = document.createElement('span');
+    title.textContent = option.title;
+    description.append(title);
+    if (option.price) {
+      const price = document.createElement('small');
+      price.textContent = `${option.price} / ชิ้น`;
+      description.append(price);
+    }
     item.append(description);
     const controls = document.createElement('div');
     controls.className = 'subscription-quantity';
@@ -214,7 +224,7 @@ export class SubscriptionBuilder extends HTMLElement {
     remove.type = 'button';
     remove.className = 'button-secondary';
     remove.dataset.remove = '';
-    remove.textContent = 'ลบ';
+    remove.textContent = '×';
     remove.setAttribute('aria-label', `ลบ ${option.title}`);
     remove.disabled = this.busy;
     controls.append(remove);
